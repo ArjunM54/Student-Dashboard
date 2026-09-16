@@ -59,26 +59,26 @@ function updateStatusIndicator(online) {
     badge = document.createElement("div");
     badge.id = "apiStatusBadge";
     badge.className = "api-status";
-    const topbar = document.querySelector(".topbar");
-    if (topbar) topbar.appendChild(badge);
+    const topbarRight = document.querySelector(".topbar-right");
+    if (topbarRight) topbarRight.prepend(badge);
   }
   if (online) {
-    badge.style.background = "#def7ec";
-    badge.style.color = "#03543f";
-    badge.style.padding = "4px 10px";
+    badge.style.background = "var(--badge-active-bg)";
+    badge.style.color = "var(--badge-active-text)";
+    badge.style.padding = "6px 12px";
     badge.style.borderRadius = "20px";
-    badge.style.fontSize = "0.8rem";
+    badge.style.fontSize = "0.75rem";
     badge.style.fontWeight = "600";
     badge.textContent = "🟢 API Connected";
   } else {
     badge.style.background = "#fef3c7";
     badge.style.color = "#92400e";
-    badge.style.padding = "4px 10px";
+    badge.style.padding = "6px 12px";
     badge.style.borderRadius = "20px";
-    badge.style.fontSize = "0.8rem";
+    badge.style.fontSize = "0.75rem";
     badge.style.fontWeight = "600";
-    badge.textContent = "🟡 Demo Mode (Local Backend Unreachable)";
-    badge.title = "To connect live backend, run backend server locally or deploy backend to Render/Vercel";
+    badge.textContent = "🟡 Demo Mode";
+    badge.title = "Local Backend Unreachable. Add/Edit works in Demo Mode.";
   }
 }
 
@@ -228,6 +228,32 @@ function closeModal() {
   $("editingId").value = "";
   $("modalTitle").textContent = "Add Student";
 }
+
+// Mobile Sidebar Drawer Functions
+function toggleSidebar(open) {
+  const sidebar = $("sidebar");
+  const overlay = $("sidebarOverlay");
+  if (!sidebar || !overlay) return;
+  if (open) {
+    sidebar.classList.add("open");
+    overlay.classList.add("active");
+  } else {
+    sidebar.classList.remove("open");
+    overlay.classList.remove("active");
+  }
+}
+
+if ($("mobileNavBtn")) $("mobileNavBtn").addEventListener("click", () => toggleSidebar(true));
+if ($("closeSidebarBtn")) $("closeSidebarBtn").addEventListener("click", () => toggleSidebar(false));
+if ($("sidebarOverlay")) $("sidebarOverlay").addEventListener("click", () => toggleSidebar(false));
+if ($("sidebarAddBtn")) {
+  $("sidebarAddBtn").addEventListener("click", (e) => {
+    e.preventDefault();
+    toggleSidebar(false);
+    openModal();
+  });
+}
+
 $("openAddBtn").addEventListener("click", openModal);
 $("closeModalBtn").addEventListener("click", closeModal);
 $("searchInput").addEventListener("input", renderStudents);

@@ -3,40 +3,76 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>StudentHub — CRUD Learning Project</title>
+  <title>StudentHub — Student Management Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <aside class="sidebar">
-    <h2>StudentHub</h2>
+  <div id="sidebarOverlay" class="sidebar-overlay"></div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-header">
+      <div class="brand">
+        <span class="brand-icon">🎓</span>
+        <h2>StudentHub</h2>
+      </div>
+      <button id="closeSidebarBtn" class="close-sidebar-btn" aria-label="Close Sidebar">✕</button>
+    </div>
     <nav>
-      <a class="active" href="#dashboard">Dashboard</a>
-      <a href="#students">Students</a>
-      <a href="#add">Add Student</a>
+      <a class="active" href="#dashboard">
+        <span class="nav-icon">📊</span>
+        <span>Dashboard</span>
+      </a>
+      <a href="#students">
+        <span class="nav-icon">👥</span>
+        <span>Students</span>
+      </a>
+      <a href="#" id="sidebarAddBtn">
+        <span class="nav-icon">➕</span>
+        <span>Add Student</span>
+      </a>
     </nav>
-    <p class="hint">CRUD Learning Project</p>
+    <div class="sidebar-footer">
+      <p class="hint">Web Development Minor Project</p>
+    </div>
   </aside>
 
   <main class="main">
     <header class="topbar">
-      <div>
-        <p class="eyebrow">WEB DEVELOPMENT MINOR PROJECT</p>
-        <h1>Student Management</h1>
+      <div class="topbar-left">
+        <button id="mobileNavBtn" class="icon-btn mobile-toggle" aria-label="Toggle Navigation">☰</button>
+        <div>
+          <p class="eyebrow">WEB DEVELOPMENT MINOR PROJECT</p>
+          <h1>Student Management</h1>
+        </div>
       </div>
-      <button id="themeBtn" class="icon-btn" title="Toggle theme">◐</button>
+      <div class="topbar-right">
+        <button id="themeBtn" class="icon-btn" title="Toggle theme">◐</button>
+      </div>
     </header>
 
     <section id="dashboard" class="stats">
       <article class="stat-card">
-        <span>Total Students</span>
+        <div class="stat-header">
+          <span>Total Students</span>
+          <div class="stat-icon blue">👥</div>
+        </div>
         <strong id="totalCount">0</strong>
       </article>
       <article class="stat-card">
-        <span>Active</span>
+        <div class="stat-header">
+          <span>Active Students</span>
+          <div class="stat-icon green">✅</div>
+        </div>
         <strong id="activeCount">0</strong>
       </article>
       <article class="stat-card">
-        <span>Departments</span>
+        <div class="stat-header">
+          <span>Departments</span>
+          <div class="stat-icon purple">🏢</div>
+        </div>
         <strong id="departmentCount">0</strong>
       </article>
     </section>
@@ -44,23 +80,28 @@
     <section id="students" class="panel">
       <div class="panel-head">
         <div>
-          <h2>Students</h2>
-          <p>Practice Create, Read, Update and Delete.</p>
+          <h2>Student Directory</h2>
+          <p>Create, Read, Update and Delete student records effortlessly.</p>
         </div>
         <button id="openAddBtn" class="primary-btn">+ Add Student</button>
       </div>
 
       <div class="toolbar">
-        <input id="searchInput" type="search" placeholder="Search by name, ID or email...">
-        <select id="departmentFilter">
-          <option value="">All departments</option>
-          <option>CSE</option>
-          <option>ECE</option>
-          <option>EEE</option>
-          <option>MECH</option>
-          <option>CIVIL</option>
-        </select>
-        <button id="clearBtn" class="secondary-btn">Clear</button>
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input id="searchInput" type="search" placeholder="Search by name, ID or email...">
+        </div>
+        <div class="filter-group">
+          <select id="departmentFilter">
+            <option value="">All departments</option>
+            <option>CSE</option>
+            <option>ECE</option>
+            <option>EEE</option>
+            <option>MECH</option>
+            <option>CIVIL</option>
+          </select>
+          <button id="clearBtn" class="secondary-btn">Clear</button>
+        </div>
       </div>
 
       <div class="table-wrap">
@@ -79,30 +120,47 @@
         </table>
       </div>
       <div id="emptyState" class="empty hidden">
+        <div class="empty-icon">📂</div>
         <h3>No students found</h3>
-        <p>Add a student or change your search/filter.</p>
+        <p>Add a student or clear search filters to view records.</p>
       </div>
     </section>
   </main>
 
   <div id="studentModal" class="modal hidden">
     <div class="modal-card">
-      <button id="closeModalBtn" class="close">×</button>
+      <button id="closeModalBtn" class="close" aria-label="Close modal">✕</button>
       <h2 id="modalTitle">Add Student</h2>
       <form id="studentForm">
         <input type="hidden" id="editingId">
-        <label>Student ID<input id="studentId" required placeholder="STU001"></label>
-        <label>Full Name<input id="name" required placeholder="Arjun Kumar"></label>
-        <label>Email<input id="email" type="email" required placeholder="arjun@example.com"></label>
+        <label>Student ID<input id="studentId" required placeholder="e.g. STU001"></label>
+        <label>Full Name<input id="name" required placeholder="e.g. Arjun Kumar"></label>
+        <label>Email<input id="email" type="email" required placeholder="e.g. arjun@example.com"></label>
         <label>Department
           <select id="department" required>
-            <option value="">Select</option><option>CSE</option><option>ECE</option>
-            <option>EEE</option><option>MECH</option><option>CIVIL</option>
+            <option value="">Select Department</option>
+            <option>CSE</option>
+            <option>ECE</option>
+            <option>EEE</option>
+            <option>MECH</option>
+            <option>CIVIL</option>
           </select>
         </label>
-        <label>Year<select id="year" required><option>1</option><option>2</option><option>3</option><option>4</option></select></label>
-        <label>Status<select id="status" required><option value="Active">Active</option><option value="Inactive">Inactive</option></select></label>
-        <button class="primary-btn" type="submit" id="saveBtn">Save Student</button>
+        <label>Year
+          <select id="year" required>
+            <option>1</option>
+            <option>2</option>
+            <option>3</option>
+            <option>4</option>
+          </select>
+        </label>
+        <label>Status
+          <select id="status" required>
+            <option value="Active">Active</option>
+            <option value="Inactive">Inactive</option>
+          </select>
+        </label>
+        <button class="primary-btn submit-btn" type="submit" id="saveBtn">Save Student</button>
       </form>
     </div>
   </div>
