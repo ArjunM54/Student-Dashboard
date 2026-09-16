@@ -1,0 +1,5 @@
+node_modules/
+.env
+web_minor.zip
+.DS_Store
+Thumbs.db
