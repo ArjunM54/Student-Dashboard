@@ -1,22 +1,84 @@
-// Learning note: this file connects the UI to the REST API.
-// Frontend flow: user action -> fetch() -> backend API -> database -> response -> UI.
+// Learning note: connects the UI to the REST API with fallback for live GitHub Pages preview.
 
-const API_URL = "http://localhost:5000/api/students";
+const API_URL = window.API_URL || "http://localhost:5000/api/students";
 
 const $ = (id) => document.getElementById(id);
 const form = $("studentForm");
 let allStudents = [];
+let isBackendOnline = false;
+
+// Default initial demo data if localStorage is empty
+const INITIAL_DEMO_DATA = [
+  { _id: "demo-1", studentId: "STU001", name: "Arjun Kumar", email: "arjun@example.com", department: "CSE", year: 3, status: "Active" },
+  { _id: "demo-2", studentId: "STU002", name: "Priya Sharma", email: "priya@example.com", department: "ECE", year: 2, status: "Active" },
+  { _id: "demo-3", studentId: "STU003", name: "Rahul Verma", email: "rahul@example.com", department: "EEE", year: 4, status: "Inactive" }
+];
+
+function getLocalStudents() {
+  const data = localStorage.getItem("demo_students");
+  if (!data) {
+    localStorage.setItem("demo_students", JSON.stringify(INITIAL_DEMO_DATA));
+    return INITIAL_DEMO_DATA;
+  }
+  try {
+    return JSON.parse(data);
+  } catch (e) {
+    return INITIAL_DEMO_DATA;
+  }
+}
+
+function saveLocalStudents(students) {
+  localStorage.setItem("demo_students", JSON.stringify(students));
+}
 
 async function loadStudents() {
   try {
-    const response = await fetch(API_URL);
-    if (!response.ok) throw new Error("Could not load students");
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2000); // 2 sec timeout for quick response
+
+    const response = await fetch(API_URL, { signal: controller.signal });
+    clearTimeout(timeoutId);
+
+    if (!response.ok) throw new Error("Could not load students from backend");
     allStudents = await response.json();
-    renderStudents();
-    updateStats();
+    isBackendOnline = true;
+    updateStatusIndicator(true);
   } catch (error) {
-    showToast("Backend is not running");
-    console.error(error);
+    isBackendOnline = false;
+    allStudents = getLocalStudents();
+    updateStatusIndicator(false);
+    console.warn("Backend offline or blocked by browser mixed content rules. Using demo mode.");
+  }
+  renderStudents();
+  updateStats();
+}
+
+function updateStatusIndicator(online) {
+  let badge = $("apiStatusBadge");
+  if (!badge) {
+    badge = document.createElement("div");
+    badge.id = "apiStatusBadge";
+    badge.className = "api-status";
+    const topbar = document.querySelector(".topbar");
+    if (topbar) topbar.appendChild(badge);
+  }
+  if (online) {
+    badge.style.background = "#def7ec";
+    badge.style.color = "#03543f";
+    badge.style.padding = "4px 10px";
+    badge.style.borderRadius = "20px";
+    badge.style.fontSize = "0.8rem";
+    badge.style.fontWeight = "600";
+    badge.textContent = "🟢 API Connected";
+  } else {
+    badge.style.background = "#fef3c7";
+    badge.style.color = "#92400e";
+    badge.style.padding = "4px 10px";
+    badge.style.borderRadius = "20px";
+    badge.style.fontSize = "0.8rem";
+    badge.style.fontWeight = "600";
+    badge.textContent = "🟡 Demo Mode (Local Backend Unreachable)";
+    badge.title = "To connect live backend, run backend server locally or deploy backend to Render/Vercel";
   }
 }
 
@@ -27,9 +89,9 @@ function renderStudents() {
 
   const students = allStudents.filter(s => {
     const matchesSearch =
-      s.name.toLowerCase().includes(search) ||
-      s.studentId.toLowerCase().includes(search) ||
-      s.email.toLowerCase().includes(search);
+      (s.name || "").toLowerCase().includes(search) ||
+      (s.studentId || "").toLowerCase().includes(search) ||
+      (s.email || "").toLowerCase().includes(search);
     return matchesSearch && (!department || s.department === department);
   });
 
@@ -69,28 +131,48 @@ form.addEventListener("submit", async (event) => {
     status: $("status").value
   };
 
-  const url = editingId ? `${API_URL}/${editingId}` : API_URL;
-  const method = editingId ? "PUT" : "POST";
+  $("saveBtn").disabled = true;
+  $("saveBtn").textContent = "Saving...";
 
-  try {
-    $("saveBtn").disabled = true;
-    $("saveBtn").textContent = "Saving...";
+  if (isBackendOnline) {
+    const url = editingId ? `${API_URL}/${editingId}` : API_URL;
+    const method = editingId ? "PUT" : "POST";
 
-    const response = await fetch(url, {
-      method,
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify(data)
-    });
+    try {
+      const response = await fetch(url, {
+        method,
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(data)
+      });
 
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.message || "Request failed");
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.message || "Request failed");
 
+      closeModal();
+      showToast(editingId ? "Student updated successfully" : "Student added successfully");
+      await loadStudents();
+    } catch (error) {
+      showToast(error.message);
+    } finally {
+      $("saveBtn").disabled = false;
+      $("saveBtn").textContent = "Save Student";
+    }
+  } else {
+    // Offline / Demo LocalStorage Mode
+    let local = getLocalStudents();
+    if (editingId) {
+      local = local.map(s => s._id === editingId ? { ...s, ...data } : s);
+      showToast("Student updated (Demo Mode)");
+    } else {
+      const newStudent = { _id: "demo-" + Date.now(), ...data };
+      local.push(newStudent);
+      showToast("Student added (Demo Mode)");
+    }
+    saveLocalStudents(local);
+    allStudents = local;
     closeModal();
-    showToast(editingId ? "Student updated successfully" : "Student added successfully");
-    await loadStudents();
-  } catch (error) {
-    showToast(error.message);
-  } finally {
+    renderStudents();
+    updateStats();
     $("saveBtn").disabled = false;
     $("saveBtn").textContent = "Save Student";
   }
@@ -118,15 +200,24 @@ window.deleteStudent = async function(id) {
 
   if (!confirm(`Delete ${student.name}? This cannot be undone.`)) return;
 
-  try {
-    const response = await fetch(`${API_URL}/${id}`, {method: "DELETE"});
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.message || "Delete failed");
+  if (isBackendOnline) {
+    try {
+      const response = await fetch(`${API_URL}/${id}`, {method: "DELETE"});
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.message || "Delete failed");
 
-    showToast("Student deleted successfully");
-    await loadStudents();
-  } catch (error) {
-    showToast(error.message);
+      showToast("Student deleted successfully");
+      await loadStudents();
+    } catch (error) {
+      showToast(error.message);
+    }
+  } else {
+    let local = getLocalStudents().filter(s => s._id !== id);
+    saveLocalStudents(local);
+    allStudents = local;
+    showToast("Student deleted (Demo Mode)");
+    renderStudents();
+    updateStats();
   }
 };
 
